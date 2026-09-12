@@ -4,6 +4,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV CLOAKBROWSER_AUTO_UPDATE=false
 ENV PYTHONUNBUFFERED=1
 
+# 让 ghcr.io 上的包自动关联到本仓库（同时保证 GITHUB_TOKEN 有推送权限）
+LABEL org.opencontainers.image.source="https://github.com/AshenOneYe/CloudflareBypassForScraping"
+LABEL org.opencontainers.image.description="CloudflareBypassForScraping server image (patched fork)"
+LABEL org.opencontainers.image.licenses="MIT"
+
 USER root
 RUN apt-get update && apt-get install -y \
     python3-pip \

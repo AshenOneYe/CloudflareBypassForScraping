@@ -1,6 +1,11 @@
 services:
   cloudflare-bypass:
-    image: ghcr.io/sarperavci/cloudflarebypassforscraping:latest
+    # 默认拉取你自己 fork 在 ghcr.io 上构建的镜像；
+    # 想换回上游/本地镜像时用环境变量覆盖，例如：
+    #   CF_IMAGE=ghcr.io/ashenoneye/cloudflarebypassforscraping:sha-2815db0 docker compose up -d
+    # 本地自行构建：docker compose build --no-cache && docker compose up -d
+    image: ${CF_IMAGE:-ghcr.io/ashenoneye/cloudflarebypassforscraping:latest}
+    # build: .
     container_name: cloudflare-bypass
     ports:
       - "8000:8000"
@@ -12,4 +17,4 @@ services:
           memory: 4G
           cpus: '2'
     shm_size: 2g
-    restart: unless-stopped 
+    restart: unless-stopped

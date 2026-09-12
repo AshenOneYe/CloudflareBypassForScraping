@@ -1,3 +1,10 @@
+# VCS / CI metadata
+.git/
+.github/
+
+# 本地已下载的 stealth Chromium（约 600MB），镜像内会在构建时重新下载
+.cloakbrowser/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
