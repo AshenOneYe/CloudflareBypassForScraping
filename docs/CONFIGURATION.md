@@ -27,9 +27,12 @@ A rotating residential proxy can change its exit IP unexpectedly, which invalida
 
 ## Browser engine (CloakBrowser)
 
+Requests that carry a proxy are launched with `geoip=True`, so CloakBrowser derives the browser timezone/locale from the proxy's exit IP. That needs the `geoip` extra (`geoip2` + `socksio`, installed via `cloakbrowser[geoip]` in `server_requirements.txt`) **and** the ~70 MB `GeoLite2-City.mmdb`, which is downloaded on first use into `~/.cloakbrowser/geoip/`. The Docker image bakes the database in at build time (`scripts/fetch_geoip_db.py`) so containers whose only route out is a proxy never have to fetch it from GitHub at runtime. Missing either one makes every proxied launch fail (`geoip2 is required for geoip=True`, or `GeoIP resolution failed: GeoIP database is unavailable`).
+
 | Variable | Default | Description |
 |---|---|---|
 | `CLOAKBROWSER_AUTO_UPDATE` | `false` | Set to `false` by the app so it does not check PyPI for a newer Chromium build on every launch. The bundled CloakBrowser library also reads `CLOAKBROWSER_BINARY_PATH`, `CLOAKBROWSER_CACHE_DIR`, and `CLOAKBROWSER_DOWNLOAD_URL` — see the CloakBrowser docs. |
+| `CLOAKBROWSER_CACHE_DIR` | `~/.cloakbrowser` | Where CloakBrowser keeps the Chromium build and the GeoIP database. Point it at a mounted volume to persist them across container recreations. |
 
 ## Virtual display (containers)
 

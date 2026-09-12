@@ -2,5 +2,7 @@ fastapi>=0.68.0
 uvicorn>=0.15.0
 pydantic>=2.0.0
 pyvirtualdisplay
-cloakbrowser
+# [geoip] pulls in geoip2 + socksio: a proxy is always passed with geoip=True,
+# which fails at launch time without geoip2 ("geoip2 is required for geoip=True").
+cloakbrowser[geoip]
 curl_cffi

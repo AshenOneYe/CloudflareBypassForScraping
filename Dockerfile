@@ -58,5 +58,11 @@ RUN pip install --no-cache-dir -r server_requirements.txt
 # Download the patched stealth Chromium into the ubuntu user's cache
 RUN python3 -c "import cloakbrowser; print(cloakbrowser.ensure_binary())"
 
+# geoip=True is used for every proxied launch, so bake the ~70 MB GeoLite2 database
+# in as well: containers that reach the internet only through a proxy cannot
+# download it from GitHub at runtime, and without it every launch fails with
+# "GeoIP resolution failed: GeoIP database is unavailable".
+RUN python3 scripts/fetch_geoip_db.py
+
 # Browser must run headed for managed Turnstile; the entrypoint provides Xvfb
 CMD ["/app/docker-entrypoint.sh"]
