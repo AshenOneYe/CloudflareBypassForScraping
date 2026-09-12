@@ -24,6 +24,7 @@ from cf_bypasser.utils.constants import (
     MAX_CONCURRENT_BROWSERS,
     IP_CHECK_ENABLED,
 )
+from cf_bypasser.utils.display import ensure_display
 from cf_bypasser.utils.ipcheck import get_exit_ip
 from cf_bypasser.cache.cookie_cache import CookieCache
 
@@ -114,6 +115,11 @@ class CloakBypasser:
             else:
                 # never silently fall back to direct: that leaks the real IP
                 raise ValueError(f"Invalid proxy, refusing to continue direct: {proxy}")
+
+        if not headless:
+            # Headed Chromium needs a real X server; in a container that is Xvfb.
+            # Start one if neither the entrypoint nor the host provided it.
+            ensure_display()
 
         launch_kwargs = dict(
             headless=headless,

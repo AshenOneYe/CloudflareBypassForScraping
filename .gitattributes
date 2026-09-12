@@ -1,0 +1,13 @@
+# Shell scripts and the Dockerfile must keep LF endings: a CRLF shebang makes
+# /bin/sh inside the container fail with "not found", and CRLF after a Dockerfile
+# line-continuation breaks the RUN. Windows checkouts (core.autocrlf=true) would
+# otherwise rewrite these on every checkout.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf

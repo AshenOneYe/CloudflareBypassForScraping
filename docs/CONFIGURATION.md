@@ -31,6 +31,15 @@ A rotating residential proxy can change its exit IP unexpectedly, which invalida
 |---|---|---|
 | `CLOAKBROWSER_AUTO_UPDATE` | `false` | Set to `false` by the app so it does not check PyPI for a newer Chromium build on every launch. The bundled CloakBrowser library also reads `CLOAKBROWSER_BINARY_PATH`, `CLOAKBROWSER_CACHE_DIR`, and `CLOAKBROWSER_DOWNLOAD_URL` — see the CloakBrowser docs. |
 
+## Virtual display (containers)
+
+The stealth browser is always launched **headed** (managed Turnstile does not clear headless), so a Linux container needs an X server. `docker-entrypoint.sh` starts `Xvfb` on `:99` for you; if the display is missing at launch time (for example when compose overrides `command:`/`entrypoint:`, which skips the entrypoint), the app starts `Xvfb` itself as a fallback. Without a display every request fails with `Missing X server or $DISPLAY`.
+
+| Variable | Default | Description |
+|---|---|---|
+| `DISPLAY_NUM` | `99` | X display number used by the entrypoint and by the in-app fallback. |
+| `CF_AUTO_XVFB` | `true` | Let the app start `Xvfb` when no usable display exists. Set to `false` if the host provides its own X server and you want the raw error instead. |
+
 ## Example
 
 ```bash
