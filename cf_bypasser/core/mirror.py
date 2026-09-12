@@ -12,6 +12,7 @@ from cf_bypasser.core.bypasser import CloakBypasser
 from cf_bypasser.utils.config import BrowserConfig
 from cf_bypasser.utils.misc import cache_key
 from cf_bypasser.utils.constants import (
+    CF_COOKIE_PREFIXES,
     MAX_SESSIONS,
     MIRROR_MAX_RETRIES,
     MIRROR_RETRY_BACKOFF_SECONDS,
@@ -37,7 +38,19 @@ class RequestMirror:
         return cleaned_headers
 
     def merge_cookies(self, incoming_cookies: str, cf_cookies: Dict[str, str]) -> str:
-        """Merge incoming cookies with Cloudflare clearance cookies."""
+        """Merge incoming cookies with Cloudflare clearance cookies.
+
+        LOCAL PATCH: the stealth browser is a *guest* visitor, so its cookie jar
+        also carries the target site's own session cookies (e.g. hanime1_session),
+        and those used to override whatever the client sent. With an upstream
+        login in the client that silently destroyed the session (the site kept
+        receiving a logged-out session, so /login redirected to /home).
+
+        Now only Cloudflare's own cookies are authoritative; every other cookie
+        comes from the client. When the client sends no cookie at all we still
+        forward the browser's CF cookies, but skip its site-session cookies so a
+        stale guest session can never leak into the request.
+        """
         try:
             incoming_dict = {}
             if incoming_cookies:
@@ -47,16 +60,27 @@ class RequestMirror:
                         name, value = cookie.split('=', 1)
                         incoming_dict[name.strip()] = value.strip()
 
-            # CF cookies are authoritative for any name they carry; other client cookies pass through.
+            cf_only = {
+                name: value for name, value in cf_cookies.items()
+                if name.lower().startswith(CF_COOKIE_PREFIXES)
+            }
+
+            if not incoming_dict:
+                return '; '.join(f"{name}={value}" for name, value in cf_only.items())
+
+            # 客户端 cookie 全保留；只有 CF 自己的 cookie 允许被覆盖
             merged_cookies = dict(incoming_dict)
-            merged_cookies.update(cf_cookies)
+            merged_cookies.update(cf_only)
 
             cookie_pairs = [f"{name}={value}" for name, value in merged_cookies.items()]
             return '; '.join(cookie_pairs)
         except Exception as e:
             logging.error(f"Error merging cookies: {e}")
             # Fallback to CF cookies only
-            return '; '.join([f"{name}={value}" for name, value in cf_cookies.items()])
+            return '; '.join([
+                f"{name}={value}" for name, value in cf_cookies.items()
+                if name.lower().startswith(CF_COOKIE_PREFIXES)
+            ])
 
     def build_target_url(self, hostname: str, path: str, query_string: Optional[str] = None) -> str:
         if not hostname.startswith(('http://', 'https://')):
@@ -181,6 +205,18 @@ class RequestMirror:
                 clean_headers = self._prepare_request_headers(headers, cf_data)
 
                 session = await self.get_session(hostname, proxy)
+
+                # LOCAL PATCH: keep the shared session cookie-free so the client
+                # fully owns the session. Otherwise curl_cffi's jar accumulates
+                # the target site's cookies from earlier requests (e.g. a login
+                # POST) and the client can never see or clear that hidden state —
+                # it once left the mirror "logged in" while the client had no
+                # session, making /login redirect to /home and blocking re-login.
+                # Cloudflare cookies still arrive via the cookie cache above.
+                try:
+                    session.cookies.clear()
+                except Exception:  # noqa: BLE001
+                    pass
 
                 response = await session.request(
                     method=method,

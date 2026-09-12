@@ -51,7 +51,13 @@ def is_safe_url(url: str) -> bool:
         if ip_literal is not None:
             return not _ip_is_blocked(ip_literal)
 
-        infos = socket.getaddrinfo(hostname, None)
+        # LOCAL PATCH (windows deployment): resolve IPv4 only.
+        # Chinese ISP DNS returns a poisoned IPv6 answer for blocked domains
+        # (e.g. hanime1.me -> 2001::9df0:1412, inside 2001::/23 which Python's
+        # ipaddress marks as private), which made this fail closed with 400
+        # even though the host is public. IPv4 answers (and the loopback /
+        # private checks below) keep the SSRF protection intact.
+        infos = socket.getaddrinfo(hostname, None, socket.AF_INET)
         if not infos:
             return False
         for info in infos:
